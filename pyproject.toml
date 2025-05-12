@@ -1,0 +1,16 @@
+[project]
+name = "crisis-mmd"
+version = "0.1.0"
+description = "CrisisMMD Classifier"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "accelerate>=1.6.0",
+    "datasets>=3.5.0",
+    "gritlm>=1.0.2",
+    "huggingface-hub[hf-xet]>=0.30.2",
+    "matplotlib>=3.10.3",
+    "pillow>=11.2.1",
+    "spacy>=3.8.5",
+    "torchvision>=0.22.0",
+]
