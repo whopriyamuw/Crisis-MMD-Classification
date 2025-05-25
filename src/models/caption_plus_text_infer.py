@@ -12,8 +12,6 @@ import os
 import re
 
 
-text_model_name = "sentence-transformers/LaBSE" # sentence-transformers/LaBSE, xlm-roberta-base
-
 class StandaloneClassifier(nn.Module):
     def __init__(self, text_dim=768, hidden_dim=512, num_classes=3):
         super().__init__()
@@ -58,6 +56,8 @@ class CrisisTestDataset(Dataset):
         text = re.sub(r'^RT\s+', '', text)
         # Remove @mentions
         text = re.sub(r'@\w+', '', text)
+        # Remove #words
+        text = re.sub(r'#\w+', '', text)
         # Remove URLs
         text = re.sub(r'http\S+', '', text)
         # Remove extra whitespace
@@ -95,8 +95,8 @@ def evaluate(args):
     # Load models
     caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
     caption_processor = AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-    text_model = AutoModel.from_pretrained(text_model_name).to(device)
-    tokenizer = AutoTokenizer.from_pretrained(text_model_name)
+    text_model = AutoModel.from_pretrained(args.text_model_name).to(device)
+    tokenizer = AutoTokenizer.from_pretrained(args.text_model_name)
 
     classifier = StandaloneClassifier().to(device)
     classifier.load_state_dict(torch.load(f"./saved_classifier/{args.epochs}_{args.lang}_standalone_classifier.pt", map_location=device))
@@ -161,6 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--lang", type=str, default="")
+    parser.add_argument('--text_model_name', type=str, default='sentence-transformers/LaBSE') # can use xlm-roberta-base or sentence-transformers/LaBSE
     parser.add_argument("--caption_csv", type=str, default="captions_test.csv", help="CSV file to store/load image captions for test set")
     parser.add_argument("--preprocess_text", action="store_true", help="Whether to clean tweet text")
     args = parser.parse_args()

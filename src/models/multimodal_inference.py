@@ -74,6 +74,8 @@ def clean_tweet(text):
     text = re.sub(r'^RT\s+', '', text)
     # Remove @mentions
     text = re.sub(r'@\w+', '', text)
+    # Remove #words
+    text = re.sub(r'#\w+', '', text)
     # Remove URLs
     text = re.sub(r'http\S+', '', text)
     # Remove extra whitespace
@@ -228,7 +230,7 @@ def main(args):
     if args.mode in ['multimodal', 'all']:
         # Evaluate Multimodal
         multimodal_model = MultimodalClassifier(text_dim=text_dim, image_dim=image_dim, hidden_dim=hidden_dim, num_classes=3).to(device)
-        multimodal_model.load_state_dict(torch.load(f"model_weights/10_{lang}_multimodal_classifier.pt"))
+        multimodal_model.load_state_dict(torch.load(f"model_weights/{lang}_multimodal_classifier.pt"))
         mm_labels, mm_preds = evaluate_multimodal(multimodal_model, test_loader)
         print("Multimodal predictions:", mm_preds)
         print_metrics(mm_labels, mm_preds)
@@ -236,14 +238,14 @@ def main(args):
     if args.mode in ['text', 'all']:
         # Evaluate Text-Only
         text_only_model = TextOnlyClassifier(text_dim=text_dim, hidden_dim=hidden_dim, num_classes=3).to(device)
-        text_only_model.load_state_dict(torch.load(f"model_weights/10_{lang}_text_only_classifier.pt"))
+        text_only_model.load_state_dict(torch.load(f"model_weights/{lang}_text_only_classifier.pt"))
         to_labels, to_preds = evaluate_text_only(text_only_model, text_only_test_loader)
         print("Text-only predictions:", to_preds)
         print_metrics(to_labels, to_preds, prefix="[Text-Only] ")
 
     if args.mode in ['image', 'all']:
         image_only_model = ImageOnlyClassifier(image_dim=image_dim, hidden_dim=hidden_dim, num_classes=3).to(device)
-        image_only_model.load_state_dict(torch.load(f"model_weights/10_{lang}_image_only_classifier.pt"))
+        image_only_model.load_state_dict(torch.load(f"model_weights/{lang}_image_only_classifier.pt"))
         io_labels, io_preds = evaluate_image_only(image_only_model, image_only_test_loader)
         print("Image-only predictions:", io_preds)
         print_metrics(io_labels, io_preds, prefix="[Image-Only] ")
@@ -252,7 +254,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', type=str, choices=['multimodal', 'text', 'image', 'all'], default='multimodal', help='Which model(s) to evaluate')
     parser.add_argument('--batch_size', type=int, default=8)
-    parser.add_argument('--text_model_name', type=str, default='xlm-roberta-base') # can also use sentence-transformers/LaBSE
+    parser.add_argument('--text_model_name', type=str, default='sentence-transformers/LaBSE') # can use xlm-roberta-base or sentence-transformers/LaBSE
     parser.add_argument('--image_model_name', type=str, default='openai/clip-vit-base-patch32', help='CLIP or other image model name')
     parser.add_argument('--lang', type=str, default='en', help='Language code for model weights')
     parser.add_argument("--preprocess_text", action="store_true", help="Whether to clean tweet text")

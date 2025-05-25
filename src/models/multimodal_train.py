@@ -79,6 +79,8 @@ def clean_tweet(text):
     text = re.sub(r'^RT\s+', '', text)
     # Remove @mentions
     text = re.sub(r'@\w+', '', text)
+    # Remove #words
+    text = re.sub(r'#\w+', '', text)
     # Remove URLs
     text = re.sub(r'http\S+', '', text)
     # Remove extra whitespace
@@ -268,12 +270,17 @@ def main(args):
         val_data, batch_size=batch_size, shuffle=False,
         collate_fn=lambda batch: collate_fn_image_only(batch, clip_processor, clip_model)
     )
+    train_loader_image = DataLoader(
+        train_data, batch_size=batch_size, shuffle=True,
+        collate_fn=lambda batch: collate_fn_image_only(batch, clip_processor, clip_model)
+    )
 
     if args.mode in ['multimodal', 'all']:
         # --- Multimodal Training ---
         model = MultimodalClassifier(text_dim=text_dim, image_dim=image_dim, hidden_dim=hidden_dim, num_classes=3).to(device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
         criterion = nn.CrossEntropyLoss()
+        best_val_acc = 0.0
         for epoch in range(num_epochs):
             model.train()
             total_loss = 0
@@ -288,7 +295,10 @@ def main(args):
             avg_loss = total_loss / len(train_loader)
             val_loss, val_acc = evaluate_multimodal(model, val_loader, criterion, device)
             print(f"[Multimodal] Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_loss:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
-        torch.save(model.state_dict(), f"model_weights/{num_epochs}_{lang}_multimodal_classifier.pt")
+            if val_acc > best_val_acc:
+                best_val_acc = val_acc
+                torch.save(model.state_dict(), f"model_weights/{lang}_multimodal_classifier.pt")
+                print(f"[Multimodal] New best model saved with Val Acc: {val_acc:.4f}")
         print(f"Training completed in {time.time() - t1:.2f} seconds.")
 
     if args.mode in ['text', 'all']:
@@ -296,6 +306,7 @@ def main(args):
         text_only_model = TextOnlyClassifier(text_dim=text_dim, hidden_dim=hidden_dim, num_classes=3).to(device)
         text_only_optimizer = torch.optim.AdamW(text_only_model.parameters(), lr=learning_rate)
         text_only_criterion = nn.CrossEntropyLoss()
+        best_val_acc = 0.0
         for epoch in range(num_epochs):
             text_only_model.train()
             total_loss = 0
@@ -310,7 +321,10 @@ def main(args):
             avg_loss = total_loss / len(train_loader)
             val_loss, val_acc = evaluate_text_only(text_only_model, val_loader_text, text_only_criterion, device)
             print(f"[Text-Only] Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_loss:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
-        torch.save(text_only_model.state_dict(), f"model_weights/{num_epochs}_{lang}_text_only_classifier.pt")
+            if val_acc > best_val_acc:
+                best_val_acc = val_acc
+                torch.save(text_only_model.state_dict(), f"model_weights/{lang}_text_only_classifier.pt")
+                print(f"[Text-Only] New best model saved with Val Acc: {val_acc:.4f}")
         print("Text-only training completed.")
 
     if args.mode in ['image', 'all']:
@@ -318,10 +332,11 @@ def main(args):
         image_only_model = ImageOnlyClassifier(image_dim=image_dim, hidden_dim=hidden_dim, num_classes=3).to(device)
         image_only_optimizer = torch.optim.AdamW(image_only_model.parameters(), lr=learning_rate)
         image_only_criterion = nn.CrossEntropyLoss()
+        best_val_acc = 0.0
         for epoch in range(num_epochs):
             image_only_model.train()
             total_loss = 0
-            for image_embs, labels in tqdm(train_loader, desc=f"Image-Only Epoch {epoch+1}"):
+            for image_embs, labels in tqdm(train_loader_image, desc=f"Image-Only Epoch {epoch+1}"):
                 image_embs, labels = image_embs.to(device), labels.to(device)
                 logits = image_only_model(image_embs)
                 loss = image_only_criterion(logits, labels)
@@ -329,21 +344,24 @@ def main(args):
                 image_only_optimizer.step()
                 image_only_optimizer.zero_grad()
                 total_loss += loss.item()
-            avg_loss = total_loss / len(train_loader)
+            avg_loss = total_loss / len(train_loader_image)
             val_loss, val_acc = evaluate_image_only(image_only_model, val_loader_image, image_only_criterion, device)
             print(f"[Image-Only] Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_loss:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
-        torch.save(image_only_model.state_dict(), f"model_weights/{num_epochs}_{lang}_image_only_classifier.pt")
+            if val_acc > best_val_acc:
+                best_val_acc = val_acc
+                torch.save(image_only_model.state_dict(), f"model_weights/{lang}_image_only_classifier.pt")
+                print(f"[Image-Only] New best model saved with Val Acc: {val_acc:.4f}")
         print("Image-only training completed.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', type=str, choices=['multimodal', 'text', 'image', 'all'], default='multimodal', help='Which model(s) to train')
+    parser.add_argument('--mode', type=str, choices=['multimodal', 'text', 'image', 'all'], default='multimodal')
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--num_epochs', type=int, default=10)
     parser.add_argument('--learning_rate', type=float, default=1e-5)
-    parser.add_argument('--text_model_name', type=str, default='xlm-roberta-base')
+    parser.add_argument('--text_model_name', type=str, default='sentence-transformers/LaBSE')
     parser.add_argument('--image_model_name', type=str, default='openai/clip-vit-base-patch32') # can also use sentence-transformers/LaBSE
-    parser.add_argument('--lang', type=str, default='en', help='Language code for tweet text field (e.g., es, en, hi)')
-    parser.add_argument("--preprocess_text", action="store_true", help="Whether to clean tweet text")
+    parser.add_argument('--lang', type=str, default='en') # en,hi,es
+    parser.add_argument("--preprocess_text", action="store_true")
     args = parser.parse_args()
     main(args)

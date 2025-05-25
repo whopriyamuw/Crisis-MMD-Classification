@@ -45,6 +45,8 @@ def clean_tweet(text):
     text = re.sub(r'^RT\s+', '', text)
     # Remove @mentions
     text = re.sub(r'@\w+', '', text)
+    # Remove #words
+    text = re.sub(r'#\w+', '', text)
     # Remove URLs
     text = re.sub(r'http\S+', '', text)
     # Remove extra whitespace
@@ -191,6 +193,7 @@ def train(args):
         return avg_loss, accuracy
 
     classifier.train()
+    best_val_acc = 0.0
     for epoch in range(args.epochs):
         total_loss = 0
         for batch in tqdm(dataloader):
@@ -205,11 +208,13 @@ def train(args):
         avg_loss = total_loss / len(dataloader)
         val_loss, val_acc = evaluate(classifier, val_dataloader, criterion, device)
         print(f"Epoch {epoch+1}/{args.epochs}, Train Loss: {avg_loss:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            if not os.path.exists(args.output_dir):
+                os.makedirs(args.output_dir)
+            torch.save(classifier.state_dict(), args.output_dir + f"/{args.lang}_standalone_classifier.pt")
+            print(f"New best model saved with Val Acc: {val_acc:.4f}")
     
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
-
-    torch.save(classifier.state_dict(), args.output_dir + f"/{args.epochs}_{args.lang}_standalone_classifier.pt")
     print("Standalone classifier training completed.")
 
 # --- Argument Parser ---
@@ -219,7 +224,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--output_dir", type=str, default="./saved_classifier")
-    parser.add_argument('--text_model_name', type=str, default='xlm-roberta-base') # can also use sentence-transformers/LaBSE
+    parser.add_argument('--text_model_name', type=str, default='xlm-roberta-base') # can use xlm-roberta-base or sentence-transformers/LaBSE
     parser.add_argument('--image_model_name', type=str, default='Salesforce/blip-image-captioning-base')
     parser.add_argument("--lang", type=str, default="hi")
     parser.add_argument("--caption_csv", type=str, default="captions.csv", help="CSV file to store/load image captions")
