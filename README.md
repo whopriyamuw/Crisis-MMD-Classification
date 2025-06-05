@@ -10,7 +10,7 @@ git clone https://github.com/yourusername/Crisis-MMD-Classification.git
 cd Crisis-MMD-Classification
 ```
 
-2. Create and activate a virtual environment (recommended):
+2. Create and activate a virtual environment:
 ```bash
 python -m venv venv
 source venv/bin/activate
