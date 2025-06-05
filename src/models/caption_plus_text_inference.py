@@ -162,8 +162,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--lang", type=str, default="")
     parser.add_argument('--text_model_name', type=str, default='sentence-transformers/LaBSE') # can use xlm-roberta-base or sentence-transformers/LaBSE
-    parser.add_argument("--caption_csv", type=str, default="captions_test.csv", help="CSV file to store/load image captions for test set")
-    parser.add_argument("--preprocess_text", action="store_true", help="Whether to clean tweet text")
+    parser.add_argument("--caption_csv", type=str, default="captions_test.csv")
+    parser.add_argument("--preprocess_text", action="store_true")
     args = parser.parse_args()
 
     t1 = time.time()

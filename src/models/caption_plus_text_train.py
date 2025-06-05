@@ -227,9 +227,9 @@ if __name__ == "__main__":
     parser.add_argument('--text_model_name', type=str, default='xlm-roberta-base') # can use xlm-roberta-base or sentence-transformers/LaBSE
     parser.add_argument('--image_model_name', type=str, default='Salesforce/blip-image-captioning-base')
     parser.add_argument("--lang", type=str, default="hi")
-    parser.add_argument("--caption_csv", type=str, default="captions.csv", help="CSV file to store/load image captions")
-    parser.add_argument("--val_caption_csv", type=str, default="captions_val.csv", help="CSV file to store/load validation image captions")
-    parser.add_argument("--preprocess_text", action="store_true", help="Whether to clean tweet text")
+    parser.add_argument("--caption_csv", type=str, default="captions.csv")
+    parser.add_argument("--val_caption_csv", type=str, default="captions_val.csv")
+    parser.add_argument("--preprocess_text", action="store_true")
     args = parser.parse_args()
 
     t1 = time.time()

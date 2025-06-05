@@ -1,0 +1,14 @@
+accelerate>=1.6.0
+datasets>=3.5.0
+gritlm>=1.0.2
+huggingface-hub[hf-xet]>=0.30.2
+matplotlib>=3.10.3
+pillow>=11.2.1
+spacy>=3.8.5
+torch>=2.2.0
+torchvision>=0.22.0
+numpy>=1.26.0
+tqdm>=4.66.0
+scikit-learn>=1.4.0
+transformers>=4.49.0
+pandas>=2.2.2

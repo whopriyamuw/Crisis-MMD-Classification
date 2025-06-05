@@ -255,8 +255,8 @@ if __name__ == "__main__":
     parser.add_argument('--mode', type=str, choices=['multimodal', 'text', 'image', 'all'], default='multimodal', help='Which model(s) to evaluate')
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--text_model_name', type=str, default='sentence-transformers/LaBSE') # can use xlm-roberta-base or sentence-transformers/LaBSE
-    parser.add_argument('--image_model_name', type=str, default='openai/clip-vit-base-patch32', help='CLIP or other image model name')
-    parser.add_argument('--lang', type=str, default='en', help='Language code for model weights')
-    parser.add_argument("--preprocess_text", action="store_true", help="Whether to clean tweet text")
+    parser.add_argument('--image_model_name', type=str, default='openai/clip-vit-base-patch32')
+    parser.add_argument('--lang', type=str, default='en')
+    parser.add_argument("--preprocess_text", action="store_true")
     args = parser.parse_args()
     main(args)
