@@ -55,3 +55,6 @@ python src/models/inference.py
 
 Here inference.py is the inference code corresponding to the model trained.
 
+### Vision Language Model
+
+The code for the VLM experiments are located in `notebooks/vlm_instruct.ipynb`. To reproduce the experiments run the Jupyter Notebook in a Google Colab environment with a T4 GPU.
